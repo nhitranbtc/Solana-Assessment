@@ -1,0 +1,117 @@
+# Senior Solana Blockchain Engineer–Technical Assessment
+
+## Project Context
+
+We have an existing Solana Meme Coin project built using Solana, Rust, and Anchor.
+
+The goal is to evaluate your ability to review blockchain architecture, identify security issues, and propose improvements for a production-ready Web3 application.
+
+Time Limit: 60 Minutes
+
+---
+
+## Section 1 – Solana Fundamentals
+
+### Question 1
+
+Explain the difference between:
+
+* Solana Accounts
+* Programs
+* PDAs (Program Derived Addresses)
+
+Provide a practical example of how each would be used in a meme coin project.
+
+---
+
+### Question 2
+
+Why might a Solana project choose Anchor Framework instead of native Solana development?
+
+---
+
+### Question 3
+
+What security risks should be considered when managing a token treasury on Solana?
+
+---
+
+## Section 2 – Architecture Review
+
+Assume the current project contains:
+
+* SPL Token
+* Wallet Connection
+* Token Transfers
+
+### Task
+
+Provide a short technical review covering:
+
+1. Current strengths
+2. Current limitations
+3. Security concerns
+4. Features needed for production launch
+5. Recommended next development phase
+
+Maximum: 1 page
+
+---
+
+## Section 3 – Code Review
+
+Review the following code:
+
+```rust id="4uxznd"
+pub fn transfer_rewards(ctx: Context<TransferRewards>, amount: u64) -> Result<()> {
+    token::transfer(
+        ctx.accounts.transfer_context(),
+        amount,
+    )?;
+
+    Ok(())
+}
+```
+
+### Questions
+
+1. What validations are missing?
+2. What security risks exist?
+3. What improvements would you make?
+4. What tests would you write?
+
+---
+
+## Section 4 – System Design 
+
+The meme coin project wants to add staking.
+
+Briefly explain:
+
+1. Required accounts
+2. Reward calculation approach
+3. How rewards should be distributed
+4. Security considerations
+
+Maximum: 300 words
+
+---
+
+# Evaluation Criteria
+
+| Area                  | Points |
+| --------------------- | ------ |
+| Solana Knowledge      | 25     |
+| Anchor Knowledge      | 15     |
+| Security Awareness    | 25     |
+| Architecture Thinking | 20     |
+| Communication         | 15     |
+
+Total: 100 Points
+
+### Hiring Recommendation
+
+* 90–100: Strong Senior Solana Engineer
+* 75–89: Mid/Senior Solana Engineer
+* 60–74: Mid-Level Developer
+* Below 60: Not Recommended
