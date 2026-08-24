@@ -1,0 +1,5 @@
+.claude/
+.claude-flow/
+*.swp
+*.tmp
+.DS_Store
