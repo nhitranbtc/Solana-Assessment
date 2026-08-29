@@ -4,9 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       message:
-        description: 'Commit message'
-        required: true
+        description: 'Commit message (optional when PR fields provided)'
+        required: false
         default: 'chore: sol-mem-bot update'
+      pr_title:
+        description: 'PR title (empty = skip PR creation)'
+        required: false
+        default: ''
+      pr_body:
+        description: 'PR body'
+        required: false
+        default: ''
+      pr_base:
+        description: 'PR base branch'
+        required: false
+        default: 'main'
+      pr_head:
+        description: 'PR head branch'
+        required: false
+        default: ''
   issue_comment:
     types: [created]
 
@@ -58,3 +74,18 @@ jobs:
           git commit -m "$COMMIT_MSG"
           # Use the App token (not GITHUB_TOKEN) so push counts as sol-mem-bot[bot]
           git push https://x-access-token:${GH_TOKEN}@github.com/nhitranbtc/Solana-Assessment.git HEAD:main
+
+      - name: Open PR (when pr_title provided)
+        if: github.event.inputs.pr_title != ''
+        env:
+          GH_TOKEN: "${{ steps.app-token.outputs.token }}"
+          PR_TITLE: ${{ github.event.inputs.pr_title }}
+          PR_BODY: ${{ github.event.inputs.pr_body }}
+          PR_BASE: ${{ github.event.inputs.pr_base }}
+          PR_HEAD: ${{ github.event.inputs.pr_head }}
+        run: |
+          gh pr create \
+            --base "${PR_BASE}" \
+            --head "${PR_HEAD}" \
+            --title "${PR_TITLE}" \
+            --body "${PR_BODY}"
