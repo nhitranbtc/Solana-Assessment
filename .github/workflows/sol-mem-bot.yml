@@ -1,0 +1,71 @@
+name: sol-mem-bot
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Commit message'
+        required: true
+        default: 'chore: sol-mem-bot update'
+  issue_comment:
+    types: [created]
+
+jobs:
+  commit-and-push:
+    # Gate: workflow_dispatch needs no trust check (caller already has
+    # repo write). issue_comment needs trusted author + explicit @sol-mem-bot
+    # mention. Contains() (not matches()) avoids a regex-parse failure.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issue_comment' &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+        contains(github.event.comment.body, '@sol-mem-bot')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Generate App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.SOL_MEM_BOT_APP_ID }}
+          private-key: ${{ secrets.SOL_MEM_BOT_PRIVATE_KEY }}
+      - name: Checkout target branch
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.2.2
+        with:
+          fetch-depth: 1
+          ref: assessment
+      - name: Configure git as sol-mem-bot
+        run: |
+          git config user.name "sol-mem-bot"
+          git config user.email "sol-mem-bot[bot]@users.noreply.github.com"
+      - name: Append marker + commit + push
+        env:
+          GH_TOKEN: "${{ steps.app-token.outputs.token }}"
+          COMMIT_MSG: "${{ github.event.inputs.message || 'chore: sol-mem-bot update' }}"
+        run: |
+          # Stamp a sentinel line so each push is observable in git log
+          echo "<!-- touched by sol-mem-bot at $(date -u +%FT%TZ) -->" >> README.md
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+            exit 0
+          fi
+          git commit -m "$COMMIT_MSG"
+          # Use the App token (not GITHUB_TOKEN) so push counts as sol-mem-bot[bot]
+          git push https://x-access-token:${GH_TOKEN}@github.com/nhitranbtc/Solana-Assessment.git HEAD:assessment
+        run: |
+          # Stamp a sentinel line so each push is observable in git log
+          echo "<!-- touched by sol-mem-bot at $(date -u +%FT%TZ) -->" >> README.md
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+            exit 0
+          fi
+          git commit -m "$COMMIT_MSG"
+          # Use the App token (not GITHUB_TOKEN) so push counts as sol-mem-bot[bot]
+          git push https://x-access-token:${GH_TOKEN}@github.com/nhitranbtc/Solana-Assessment.git HEAD:${TARGET_BRANCH}
