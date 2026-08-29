@@ -4,11 +4,15 @@ name: claude
 # requests through https://api.minimax.io/anthropic (a third-party MiniMax proxy)
 # instead of api.anthropic.com. The MiniMax proxy sees:
 #   - the full prompt + tool output of every invocation
-#   - the ANTHROPIC_API_KEY value (which must therefore be a MiniMax-issued
-#     key, NOT an upstream Anthropic key)
+#   - the auth token value (which must therefore be a MiniMax-issued key,
+#     NOT an upstream Anthropic key)
 # This was an explicit user decision (see session 2026-08-29).
 # To revert, replace the ANTHROPIC_BASE_URL value with https://api.anthropic.com
-# and rotate the API key.
+# and rotate the key.
+#
+# Auth header note: MiniMax expects Authorization: Bearer <token> (OpenAI-style),
+# not Anthropic-native x-api-key. The Anthropic SDK honors ANTHROPIC_AUTH_TOKEN
+# (Bearer) over ANTHROPIC_API_KEY (x-api-key); we use ANTHROPIC_AUTH_TOKEN here.
 
 on:
   issue_comment:
@@ -29,13 +33,12 @@ jobs:
       matches(github.event.comment.body, '(^|\s)@claude(\s|$|[,.])')
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # action pushes commits authored by claude[bot]
-      pull-requests: write # action posts PR review comments
-      issues: write        # action posts issue comments
-      # Intentionally NO: id-token (no OIDC), actions (no GH API mutations beyond above)
+      contents: write
+      pull-requests: write
+      issues: write
     env:
       ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.2.2
@@ -44,5 +47,4 @@ jobs:
       - name: Run Claude Code (routed via MiniMax)
         uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
