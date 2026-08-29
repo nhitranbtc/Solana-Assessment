@@ -34,7 +34,7 @@ jobs:
       issues: write        # action posts issue comments
       # Intentionally NO: id-token (no OIDC), actions (no GH API mutations beyond above)
     env:
-      ANTHROPIC_BASE_URL: https://api.minimaxi.com
+      ANTHROPIC_BASE_URL: https://api.minimaxi.com/anthropic
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - name: Checkout
