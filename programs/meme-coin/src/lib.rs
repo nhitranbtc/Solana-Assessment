@@ -4,6 +4,7 @@ declare_id!("5BNHWNAYTBXL9SUJAwRT2yBMNAtJTt4irpttCiDFYbYB");
 
 pub mod errors;
 pub mod events;
+pub mod state;
 
 #[program]
 pub mod meme_coin {
