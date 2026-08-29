@@ -102,9 +102,13 @@ jobs:
         run: |
           # Merge the PR the previous step opened. --delete-branch removes both
           # local + remote head refs after the merge lands. Use --merge (default)
-          # to preserve the per-commit Conventional Commits history.
+          # to preserve the per-commit Conventional Commits history. --admin
+          # allows the bot to bypass branch-protection required-review rules
+          # when the sol-mem-bot GitHub App has Administration: Read & write
+          # permission on the repo (configured in App settings).
           gh pr merge "${PR_HEAD}" \
             --merge \
             --delete-branch \
+            --admin \
             --subject "chore: bot-merge ${PR_HEAD}" \
             --body "Auto-merged by sol-mem-bot after PR creation."
