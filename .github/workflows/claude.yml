@@ -1,5 +1,15 @@
 name: claude
 
+# Note on inference routing: this workflow intentionally sends Claude Code
+# requests through https://api.minimaxi.com (a third-party MiniMax proxy)
+# instead of api.anthropic.com. The MiniMax proxy sees:
+#   - the full prompt + tool output of every invocation
+#   - the ANTHROPIC_API_KEY value (which must therefore be a MiniMax-issued
+#     key, NOT an upstream Anthropic key)
+# This was an explicit user decision (see session 2026-08-29).
+# To revert, replace the ANTHROPIC_BASE_URL value with https://api.anthropic.com
+# and rotate the API key.
+
 on:
   issue_comment:
     types: [created]
@@ -8,20 +18,22 @@ on:
 
 jobs:
   claude:
-    # Security: only trusted actors (OWNER/MEMBER/COLLABORATOR) mentioning
-    # @claude may invoke the bot via comment. Drop `issues: opened` and
-    # `pull_request: opened` triggers because those fire from untrusted actors
-    # without a body to verify a mention.
+    # Security gate (in priority order):
+    #   1. trigger is a comment event (issue_comment OR pull_request_review_comment)
+    #   2. author is a repo OWNER, MEMBER, or COLLABORATOR (drops random forks)
+    #   3. body contains the literal "@claude" token on a word boundary
+    #      (regex avoids "@claudette", "@claude-bot-rating", etc.)
     if: |
-      contains(github.event.comment.body, '@claude') &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      matches(github.event.comment.body, '(^|\s)@claude(\s|$|[,.])')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+      contents: write      # action pushes commits authored by claude[bot]
+      pull-requests: write # action posts PR review comments
+      issues: write        # action posts issue comments
+      # Intentionally NO: id-token (no OIDC), actions (no GH API mutations beyond above)
     env:
-      # Pin endpoint in workflow (visible in code review); only API key in secret.
       ANTHROPIC_BASE_URL: https://api.minimaxi.com
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
