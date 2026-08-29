@@ -1,7 +1,7 @@
 name: claude
 
 # Note on inference routing: this workflow intentionally sends Claude Code
-# requests through https://api.minimaxi.com (a third-party MiniMax proxy)
+# requests through https://api.minimax.io/anthropic (a third-party MiniMax proxy)
 # instead of api.anthropic.com. The MiniMax proxy sees:
 #   - the full prompt + tool output of every invocation
 #   - the ANTHROPIC_API_KEY value (which must therefore be a MiniMax-issued
@@ -34,7 +34,7 @@ jobs:
       issues: write        # action posts issue comments
       # Intentionally NO: id-token (no OIDC), actions (no GH API mutations beyond above)
     env:
-      ANTHROPIC_BASE_URL: https://api.minimaxi.com/anthropic
+      ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - name: Checkout
