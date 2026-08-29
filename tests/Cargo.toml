@@ -1,0 +1,21 @@
+[package]
+name = "meme-coin-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+test-bpf = []
+
+[dependencies]
+anchor-lang = "0.30.1"
+anchor-spl = "0.30.1"
+meme-coin = { path = "../programs/meme-coin", features = ["cpi"] }
+solana-program-test = "1.18.26"
+solana-sdk = "1.18.26"
+spl-token = "4.0"
+spl-token-2022 = "4.0"
+spl-associated-token-account = "4.0"
