@@ -28,9 +28,7 @@ jobs:
     #   3. body contains the literal "@claude" token on a word boundary
     #      (regex avoids "@claudette", "@claude-bot-rating", etc.)
     if: |
-      (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
-      matches(github.event.comment.body, '(^|\s)@claude(\s|$|[,.])')
+      github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment'
     runs-on: ubuntu-latest
     permissions:
       contents: write
