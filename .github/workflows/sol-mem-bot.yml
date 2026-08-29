@@ -58,14 +58,3 @@ jobs:
           git commit -m "$COMMIT_MSG"
           # Use the App token (not GITHUB_TOKEN) so push counts as sol-mem-bot[bot]
           git push https://x-access-token:${GH_TOKEN}@github.com/nhitranbtc/Solana-Assessment.git HEAD:assessment
-        run: |
-          # Stamp a sentinel line so each push is observable in git log
-          echo "<!-- touched by sol-mem-bot at $(date -u +%FT%TZ) -->" >> README.md
-          git add README.md
-          if git diff --cached --quiet; then
-            echo "no changes to commit"
-            exit 0
-          fi
-          git commit -m "$COMMIT_MSG"
-          # Use the App token (not GITHUB_TOKEN) so push counts as sol-mem-bot[bot]
-          git push https://x-access-token:${GH_TOKEN}@github.com/nhitranbtc/Solana-Assessment.git HEAD:${TARGET_BRANCH}
