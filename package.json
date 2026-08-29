@@ -1,0 +1,15 @@
+{
+  "name": "meme-coin",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "anchor-cli": "0.30.1"
+  },
+  "scripts": {
+    "build": "anchor build",
+    "test": "anchor test",
+    "lint": "cargo clippy --workspace --all-targets -- -D warnings",
+    "fmt:check": "cargo fmt --all -- --check"
+  }
+}
