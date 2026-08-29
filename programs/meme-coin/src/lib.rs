@@ -2,6 +2,8 @@ use anchor_lang::prelude::*;
 
 declare_id!("5BNHWNAYTBXL9SUJAwRT2yBMNAtJTt4irpttCiDFYbYB");
 
+pub mod errors;
+
 #[program]
 pub mod meme_coin {
     use super::*;
@@ -12,3 +14,5 @@ pub mod meme_coin {
 
 #[derive(Accounts)]
 pub struct Placeholder {}
+
+pub use errors::ErrorCode;
