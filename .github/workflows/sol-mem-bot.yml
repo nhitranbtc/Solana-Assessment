@@ -23,6 +23,10 @@ on:
         description: 'PR head branch'
         required: false
         default: ''
+      pr_auto_merge:
+        description: "Set 'true' to auto-merge the opened PR + delete the head branch (default: false)"
+        required: false
+        default: 'false'
   issue_comment:
     types: [created]
 
@@ -89,3 +93,18 @@ jobs:
             --head "${PR_HEAD}" \
             --title "${PR_TITLE}" \
             --body "${PR_BODY}"
+
+      - name: Auto-merge + delete branch (when pr_auto_merge input = 'true')
+        if: github.event.inputs.pr_auto_merge == 'true' && github.event.inputs.pr_title != ''
+        env:
+          GH_TOKEN: "${{ steps.app-token.outputs.token }}"
+          PR_HEAD: ${{ github.event.inputs.pr_head }}
+        run: |
+          # Merge the PR the previous step opened. --delete-branch removes both
+          # local + remote head refs after the merge lands. Use --merge (default)
+          # to preserve the per-commit Conventional Commits history.
+          gh pr merge "${PR_HEAD}" \
+            --merge \
+            --delete-branch \
+            --subject "chore: bot-merge ${PR_HEAD}" \
+            --body "Auto-merged by sol-mem-bot after PR creation."
