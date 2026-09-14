@@ -121,7 +121,7 @@ pub fn initialize_mint(ctx: Context<InitializeMint>) -> Result<()> {
         metadata_accounts,
         mpl_token_metadata::instructions::CreateMetadataAccountV3InstructionArgs {
             data,
-            is_mutable: true,
+            is_mutable: false,
             collection_details: None,
         },
     );
