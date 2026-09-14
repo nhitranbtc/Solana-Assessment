@@ -176,19 +176,6 @@ pub fn renounce_mint_authority(ctx: Context<RenounceMintAuthority>) -> Result<()
     Ok(())
 }
 
-/// Wire token handlers into the program's `#[program]` module.
-pub mod handlers {
-    use super::*;
-
-    pub fn initialize_mint(ctx: Context<InitializeMint>) -> Result<()> {
-        super::initialize_mint(ctx)
-    }
-
-    pub fn renounce_mint_authority(ctx: Context<RenounceMintAuthority>) -> Result<()> {
-        super::renounce_mint_authority(ctx)
-    }
-}
-
 #[error_code]
 pub enum ErrorCode {
     #[msg("Mint authority has already been renounced")]
