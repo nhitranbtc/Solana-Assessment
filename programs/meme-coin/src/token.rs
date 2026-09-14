@@ -72,18 +72,15 @@ pub struct InitializeMint<'info> {
 }
 
 pub fn initialize_mint(ctx: Context<InitializeMint>) -> Result<()> {
-    let cfg = &mut ctx.accounts.config;
-    cfg.mint = ctx.accounts.mint.key();
-    cfg.decimals = DEFAULT_DECIMALS;
-    cfg.initial_supply = DEFAULT_INITIAL_SUPPLY;
-    cfg.authority = ctx.accounts.payer.key();
-    cfg.mint_authority_renounced = false;
-    cfg.bump = ctx.bumps.config;
-
-    // Mint full initial supply to treasury. Config PDA signs via seeds.
-    let cfg_seeds: &[&[u8]] = &[b"config", &[cfg.bump]];
+    // Capture the config PDA bump from account validation so we can sign CPIs
+    // without first mutating the on-chain config account. State writes happen
+    // AFTER all CPIs succeed (F4) so a CPI failure leaves no half-initialized
+    // config that would block re-initialization on retry.
+    let config_bump = ctx.bumps.config;
+    let cfg_seeds: &[&[u8]] = &[b"config", &[config_bump]];
     let signer_seeds = &[cfg_seeds];
 
+    // CPI 1: Mint full initial supply to treasury. Config PDA signs via seeds.
     let cpi_accounts = MintTo {
         mint: ctx.accounts.mint.to_account_info(),
         to: ctx.accounts.treasury.to_account_info(),
@@ -96,8 +93,10 @@ pub fn initialize_mint(ctx: Context<InitializeMint>) -> Result<()> {
     );
     mint_to(cpi_ctx, DEFAULT_INITIAL_SUPPLY)?;
 
-    // Create Metaplex metadata account. Config PDA signs as both mint_authority
-    // and update_authority so all future metadata updates go through the program.
+    // CPI 2: Create Metaplex metadata account. Config PDA signs as both
+    // mint_authority and update_authority so all future metadata updates go
+    // through the program. is_mutable=false (F3) prevents future admin
+    // rotation of name/symbol/uri.
     let data = DataV2 {
         name: TOKEN_NAME.to_string(),
         symbol: TOKEN_SYMBOL.to_string(),
@@ -126,6 +125,18 @@ pub fn initialize_mint(ctx: Context<InitializeMint>) -> Result<()> {
         },
     );
     metadata_cpi.invoke_signed(signer_seeds)?;
+
+    // State writes: only commit cfg fields after every CPI has succeeded.
+    // If any CPI above returned Err, none of these assignments run, so the
+    // config account remains un-initialized and the transaction can be safely
+    // re-submitted.
+    let cfg = &mut ctx.accounts.config;
+    cfg.mint = ctx.accounts.mint.key();
+    cfg.decimals = DEFAULT_DECIMALS;
+    cfg.initial_supply = DEFAULT_INITIAL_SUPPLY;
+    cfg.authority = ctx.accounts.payer.key();
+    cfg.mint_authority_renounced = false;
+    cfg.bump = config_bump;
 
     Ok(())
 }
