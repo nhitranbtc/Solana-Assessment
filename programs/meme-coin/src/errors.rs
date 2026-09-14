@@ -65,4 +65,10 @@ pub enum ErrorCode {
     PdaMismatch,
     #[msg("Account discriminator mismatch.")]
     DiscriminatorMismatch,
+
+    // RenounceMintAuthority precondition: the on-chain mint's mint_authority
+    // must equal the config PDA, otherwise the subsequent SPL SetAuthority CPI
+    // would fail opaquely with `owner does not match` or similar.
+    #[msg("Mint's mint_authority does not match the config PDA; renounce precondition failed.")]
+    MintAuthorityMismatch,
 }

@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::spl_token::solana_program::program_option::COption;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{mint_to, Mint, MintTo, Token, TokenAccount},
@@ -146,6 +147,7 @@ pub struct RenounceMintAuthority<'info> {
     #[account(
         mut,
         address = config.mint @ ErrorCode::WrongMint,
+        constraint = mint.mint_authority == COption::Some(config.key()) @ crate::errors::ErrorCode::MintAuthorityMismatch,
     )]
     pub mint: Account<'info, Mint>,
 
