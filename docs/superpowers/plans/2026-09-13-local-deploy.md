@@ -462,7 +462,8 @@ Create `/home/nhitran/Projects/Solana-Assessment/scripts/package.json`:
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
     "@solana/web3.js": "^1.91.0",
-    "@solana/spl-token": "^0.3.11"
+    "@solana/spl-token": "^0.3.11",
+    "@metaplex-foundation/mpl-token-metadata": "^3.2.5"
   },
   "devDependencies": {
     "tsx": "^4.7.0",
@@ -499,7 +500,22 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as anchor from "@coral-xyz/anchor";
-import { PublicKey, Keypair, Connection } from "@solana/web3.js";
+import {
+  PublicKey,
+  Keypair,
+  Connection,
+  SYSVAR_RENT_PUBKEY,
+  SystemProgram,
+} from "@solana/web3.js";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
+import {
+  MPL_TOKEN_METADATA_PROGRAM_ID,
+  findMetadataPda,
+} from "@metaplex-foundation/mpl-token-metadata";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -507,11 +523,9 @@ const rootDir = resolve(__dirname, "..");
 const idl = JSON.parse(
   readFileSync(resolve(rootDir, "target/idl/meme_coin.json"), "utf-8"),
 );
-
 const programId = new PublicKey(
   readFileSync(resolve(rootDir, ".localnet/program_id.txt"), "utf-8").trim(),
 );
-
 const deployer = Keypair.fromSecretKey(
   Uint8Array.from(
     JSON.parse(
@@ -521,51 +535,69 @@ const deployer = Keypair.fromSecretKey(
 );
 
 const connection = new Connection("http://127.0.0.1:8899", "confirmed");
-const wallet = new anchor.Wallet(deployer);
-const provider = new anchor.AnchorProvider(connection, wallet, {
+const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(deployer), {
   commitment: "confirmed",
 });
 anchor.setProvider(provider);
-
 const program = new anchor.Program(idl, provider);
 
-// Derive config PDA: seeds = [Buffer.from("config")]
+const mintKp = Keypair.generate();
+console.log("Mint:", mintKp.publicKey.toBase58());
+
 const [configPda] = PublicKey.findProgramAddressSync(
   [Buffer.from("config")],
   programId,
 );
+const treasuryAta = getAssociatedTokenAddressSync(
+  mintKp.publicKey,
+  configPda,
+  true,
+);
+const [metadataPda] = findMetadataPda(mintKp.publicKey);
 
 console.log("Program ID:", programId.toBase58());
 console.log("Config PDA:", configPda.toBase58());
-console.log("Deployer:", deployer.publicKey.toBase58());
+console.log("Treasury ATA:", treasuryAta.toBase58());
+console.log("Metadata PDA:", metadataPda.toBase58());
 
 const tx = await program.methods
-  .initializeMint()
+  .initializeMint(/* init args if any — verify against IDL */)
   .accounts({
     config: configPda,
+    mint: mintKp.publicKey,
+    treasury: treasuryAta,
+    metadata: metadataPda,
+    metadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
     payer: deployer.publicKey,
+    systemProgram: SystemProgram.programId,
+    tokenProgram: TOKEN_PROGRAM_ID,
+    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+    rent: SYSVAR_RENT_PUBKEY,
   })
-  .signers([deployer])
+  .signers([deployer, mintKp])
   .rpc();
 
 await connection.confirmTransaction(tx, "confirmed");
 console.log("initialize_mint tx:", tx);
 
-// Fetch config PDA account to confirm
-const configAccount = await connection.getAccountInfo(configPda);
-console.log("config PDA lamports:", configAccount?.lamports ?? 0);
-console.log("config PDA owner:", configAccount?.owner.toBase58() ?? "(missing)");
+const cfg = await connection.getAccountInfo(configPda);
+console.log("Config PDA owner:", cfg?.owner.toBase58() ?? "(missing)");
 ```
 
-- [ ] **Step 7.4: Install script deps**
+- [ ] **Step 7.4: Install script deps (lockfile committed)**
 
-Run: `cd /home/nhitran/Projects/Solana-Assessment/scripts && npm install`
-Expected: `node_modules/` populated; `package-lock.json` written. Exit 0.
+Run:
+```bash
+cd scripts
+npm install --ignore-scripts
+git add scripts/package-lock.json
+cd ..
+```
+Expected: `package-lock.json` produced; exit 0.
 
-If behind firewall or registry restrictions:
-```
-Use an offline tarball or internal proxy. Set NPM_CONFIG_REGISTRY if needed.
-```
+Subsequent installs always use `npm ci --ignore-scripts` to skip post-install scripts and remain reproducible.
+
+**Why:** `npm install` runs arbitrary post-install scripts from `@coral-xyz/anchor`, `@solana/web3.js`, `@solana/spl-token`, `tsx`, `typescript`. A compromised transitive dep executes with the developer's shell privileges. Pinned lockfile + `--ignore-scripts` blocks the attack surface for the period between `package.json` change and dep review.
 
 - [ ] **Step 7.5: Commit**
 
