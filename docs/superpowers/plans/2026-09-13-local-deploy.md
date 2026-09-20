@@ -117,6 +117,7 @@ Create `/home/nhitran/Projects/Solana-Assessment/scripts/start-validator.sh`:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 LOCALNET_DIR="$ROOT_DIR/.localnet"
@@ -129,6 +130,7 @@ mkdir -p "$LOCALNET_DIR"
 if [[ ! -f "$DEPLOYER" ]]; then
   echo "Generating deployer keypair at $DEPLOYER"
   solana-keygen new --no-bip39-passphrase --force --silent --outfile "$DEPLOYER"
+  chmod 600 "$DEPLOYER"
 fi
 
 if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
